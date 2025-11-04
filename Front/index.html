@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Caixa de Gordura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-color: #3b82f6; color: #3b82f6; }
+        
+        /* --- ESTILO ADICIONADO --- */
+        /* Esconde as setas de incremento/decremento dos campos numéricos */
+        /* para um visual mais limpo em todos os navegadores. */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield; /* Para Firefox */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Calculadora de Caixa de Gordura</h1>
+            <p class="mt-2 text-gray-600">Dimensione o volume ideal com base no tipo de uso.</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mt-8 border-b border-gray-200">
+            <nav class="flex -mb-px space-x-6" aria-label="Tabs">
+                <button id="tab-residential" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm tab-active">
+                    Residencial
+                </button>
+                <button id="tab-commercial" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    Comercial
+                </button>
+            </nav>
+        </div>
+
+        <!-- Forms -->
+        <div class="mt-6">
+            <!-- Residential Form -->
+            <form id="form-residential" class="">
+                <div class="space-y-4">
+                    <div>
+                        <label for="num_sinks" class="block text-sm font-medium text-gray-700">Número de Pias de Cozinha</label>
+                        <!-- ===== CAMPO DE INPUT ATUALIZADO ===== -->
+                        <input type="number" name="num_sinks" id="num_sinks" class="mt-2 block w-full text-center text-lg px-4 py-3 rounded-lg border-gray-300 bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="1" required>
+                    </div>
+                    <div id="people-field" class="hidden">
+                         <label for="num_people" class="block text-sm font-medium text-gray-700">Número Total de Pessoas (para edifícios)</label>
+                        <!-- ===== CAMPO DE INPUT ATUALIZADO ===== -->
+                        <input type="number" name="num_people" id="num_people" class="mt-2 block w-full text-center text-lg px-4 py-3 rounded-lg border-gray-300 bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="20">
+                    </div>
+                </div>
+                <button type="submit" class="mt-6 w-full inline-flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Calcular Volume
+                </button>
+            </form>
+
+            <!-- Commercial Form -->
+            <form id="form-commercial" class="hidden">
+                 <div>
+                    <label for="num_meals" class="block text-sm font-medium text-gray-700">Número Máximo de Refeições por Dia</label>
+                    <!-- ===== CAMPO DE INPUT ATUALIZADO ===== -->
+                    <input type="number" name="num_meals" id="num_meals" class="mt-2 block w-full text-center text-lg px-4 py-3 rounded-lg border-gray-300 bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" placeholder="150" required>
+                </div>
+                <button type="submit" class="mt-6 w-full inline-flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Calcular Volume
+                </button>
+            </form>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result" class="hidden mt-6 p-4 border-l-4 rounded-r-lg bg-gray-50 transition-all duration-300">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Resultado</h3>
+            <div id="resultText" class="space-y-1">
+                <!-- Dynamic content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- Element References ---
+    const tabResidential = document.getElementById('tab-residential');
+    const tabCommercial = document.getElementById('tab-commercial');
+    const formResidential = document.getElementById('form-residential');
+    const formCommercial = document.getElementById('form-commercial');
+    const numSinksInput = document.getElementById('num_sinks');
+    const peopleField = document.getElementById('people-field');
+    const numPeopleInput = document.getElementById('num_people');
+    const resultDiv = document.getElementById('result');
+    const resultText = document.getElementById('resultText');
+
+    let currentMode = 'residential';
+
+    // --- Tab Switching Logic ---
+    function switchTab(mode) {
+        currentMode = mode;
+        if (mode === 'residential') {
+            tabResidential.classList.add('tab-active');
+            tabCommercial.classList.remove('tab-active');
+            formResidential.classList.remove('hidden');
+            formCommercial.classList.add('hidden');
+        } else {
+            tabCommercial.classList.add('tab-active');
+            tabResidential.classList.remove('tab-active');
+            formCommercial.classList.remove('hidden');
+            formResidential.classList.add('hidden');
+        }
+        resultDiv.classList.add('hidden'); // Hide result on tab switch
+    }
+
+    tabResidential.addEventListener('click', () => switchTab('residential'));
+    tabCommercial.addEventListener('click', () => switchTab('commercial'));
+
+    // --- Conditional Field Logic ---
+    numSinksInput.addEventListener('input', (e) => {
+        const numSinks = parseInt(e.target.value, 10);
+        if (numSinks > 2) {
+            peopleField.classList.remove('hidden');
+            numPeopleInput.required = true;
+        } else {
+            peopleField.classList.add('hidden');
+            numPeopleInput.required = false;
+        }
+    });
+
+    // --- Form Submission Logic ---
+    formResidential.addEventListener('submit', submitForm);
+    formCommercial.addEventListener('submit', submitForm);
+
+    async function submitForm(event) {
+        event.preventDefault();
+        
+        let url = '';
+        if (currentMode === 'residential') {
+            const numSinks = numSinksInput.value;
+            const numPeople = numPeopleInput.value || 0;
+            url = `/get_residential_capacity?num_sinks=${numSinks}&num_people=${numPeople}`;
+        } else {
+            const numMeals = document.getElementById('num_meals').value;
+            url = `/get_commercial_capacity?num_meals=${numMeals}`;
+        }
+
+        displayLoading();
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            displayResult(data);
+        } catch (error) {
+            displayError('Não foi possível conectar à API. Verifique se o servidor está rodando e tente novamente.');
+            console.error('Fetch error:', error);
+        }
+    }
+
+    // --- UI Update Functions ---
+    function displayLoading() {
+        resultDiv.classList.remove('hidden');
+        resultDiv.classList.remove('border-red-500', 'border-green-500');
+        resultDiv.classList.add('border-gray-300');
+        resultText.innerHTML = '<p class="text-gray-600 animate-pulse">Calculando...</p>';
+    }
+
+    function displayError(message) {
+        resultDiv.classList.remove('hidden');
+        resultDiv.classList.remove('border-green-500');
+        resultDiv.classList.add('border-red-500');
+        resultText.innerHTML = `<p class="font-semibold text-red-700">Erro:</p><p>${message}</p>`;
+    }
+
+    function displayResult(data) {
+        console.log("Resposta recebida da API:", data);
+
+        resultText.innerHTML = ''; 
+        resultDiv.classList.remove('hidden');
+
+        if (data.error) {
+            displayError(data.error);
+            return; 
+        }
+
+        if (data && typeof data.volume_liters !== 'undefined') {
+            resultDiv.classList.remove('border-red-500');
+            resultDiv.classList.add('border-green-500');
+            
+            let htmlContent = '';
+            if (data.title) {
+                htmlContent += `<p class="font-semibold text-gray-800">${data.title}</p>`;
+            }
+            
+            htmlContent += `<p class="text-2xl font-bold text-blue-600">${data.volume_liters} Litros</p>`;
+            
+            if (data.volume_m3) {
+                htmlContent += `<p class="text-sm text-gray-600">Equivalente a ${Number(data.volume_m3).toFixed(3)} m³</p>`;
+            }
+            if (data.message) {
+                htmlContent += `<p class="mt-2 text-xs text-gray-500 italic">${data.message}</p>`;
+            }
+            
+            resultText.innerHTML = htmlContent;
+        } else {
+            displayError(
+                'A resposta da API não está no formato esperado. Verifique o Console do Desenvolvedor (F12) para ver os dados recebidos.'
+            );
+        }
+    }
+</script>
+
+</body>
+</html>
+
