@@ -41,7 +41,8 @@ class ApiService:
         }
         return value
 
-    def get_siphon_box_pipes(self,
+    def get_siphon_box_pipes(
+        self,
         sinks: int = 0,
         showers: int = 0,
         tubs: int = 0,
@@ -49,16 +50,14 @@ class ApiService:
         utility_sinks: int = 0,
         floor_drains: int = 0
     ):
-        # Unidades Hunter de Contribuição (UHC) - NBR 8160.
-        # Tabela 1 NBR 8160 (Valores de UHC)
-        UHC_SINKS = 1           # Lavatório
-        UHC_SHOWERS = 2         # Chuveiro
-        UHC_TUBS = 2            # Banheira
-        UHC_LAUNDRY = 3         # Máq. Lavar Roupa
-        UHC_UTILITY_SINKS = 3   # Tanque
-        UHC_FLOOR_DRAINS = 1    # Ralo de Piso Seco
+        # === 1. UHC (Unidades Hunter de Contribuição) ===
+        UHC_SINKS = 1
+        UHC_SHOWERS = 2
+        UHC_TUBS = 2
+        UHC_LAUNDRY = 3
+        UHC_UTILITY_SINKS = 3
+        UHC_FLOOR_DRAINS = 1
 
-        # 1. Somar o total de UHCs
         total_uhc = (
             (sinks * UHC_SINKS) +
             (showers * UHC_SHOWERS) +
@@ -69,25 +68,57 @@ class ApiService:
         )
 
         if total_uhc == 0:
-            return {"error": "Nenhum aparelho foi selecionado. O cálculo não pôde ser realizado."}
+            return {"error": "Nenhum aparelho foi informado para cálculo."}
 
-        # 2. Tabela 2 NBR 8160 (Diâmetro x UHC para ramais de esgoto)
-        calculated_diameter = 0
+        # === 2. Determinação do diâmetro da caixa sinfonada ===
         if total_uhc <= 2:
-            calculated_diameter = 40
+            d_saida = 40
         elif total_uhc <= 6:
-            calculated_diameter = 50
+            d_saida = 50
         elif total_uhc <= 20:
-            calculated_diameter = 75
-        else: # Mais de 20 UHCs
-            calculated_diameter = 100
+            d_saida = 75
+        else:
+            d_saida = 100
 
-        # 3. Regra Mínima (NBR 8160 item 4.2.2.3)
-        # O diâmetro de saída de uma caixa sifonada deve ser no mínimo 50mm.
-        outlet_pipe_mm = max(calculated_diameter, 50)
+        d_saida = max(d_saida, 50)  # mínimo NBR 8160
+        d_entrada = 40 if d_saida == 50 else 50  # simplificação usual
+
+        # === 3. Tubo de queda (Dq) ===
+        # Regra simplificada: depende do total de UHC
+        if total_uhc <= 6:
+            d_queda = 75
+        elif total_uhc <= 20:
+            d_queda = 100
+        else:
+            d_queda = 150
+
+        # === 4. Tubo de gordura (Dg) ===
+        # Usa o mesmo da saída, mas com mínimo de 75 mm (prática comum)
+        d_gordura = max(d_saida, 75)
+
+        # === 5. Tubo de ventilação (Dv) ===
+        # NBR 8160 recomenda 40 ou 50 mm
+        d_vent = 40 if d_saida <= 75 else 50
+
+        # === 6. Perda de carga (estimativa simplificada) ===
+        # h_f = k * (L/D)^1.75  (modelo empírico)
+        k = 0.02  # fator empírico médio
+        L = 3     # metros (comprimento médio de ramal)
+        hf = round(k * ((L / (d_saida / 1000)) ** 1.75), 3)
+
         value = {
-            "outlet_pipe_mm": outlet_pipe_mm,
-            "inlet_info": "Entradas de 50mm e 40mm compatíveis.",
-            "message": "Cálculo baseado em 8 UHCs (Unidades Hunter de Contribuição)."
+            "outlet_pipe_mm": d_saida,
+            "inlet_pipe_mm": d_entrada,
+            "fall_pipe_mm": d_queda,
+            "grease_pipe_mm": d_gordura,
+            "vent_pipe_mm": d_vent,
+            "head_loss_m": hf,
+            "total_uhc": total_uhc,
+            "message": (
+                f"Cálculo para {total_uhc} UHCs (Unidades Hunter). "
+                f"Perda de carga estimada: {hf} mca."
+            )
         }
+
         return value
+
