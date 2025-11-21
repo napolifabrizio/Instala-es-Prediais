@@ -8,17 +8,22 @@ class ApiService:
 
     def calculate_residential(self, num_sinks: int, num_people: Optional[int] = 0):
         value = 0
+        # Frequência padrão residencial: Semestral
+        maintenance_msg = "A cada 6 meses (Semestral)"
+
         if num_sinks == 1:
             value = {
                 "title": "Recomendação: Caixa de Gordura Simples (CGS)",
                 "volume_liters": self.SIMPLE_RESIDENTIAL_MINIMUM_VOLUME,
-                "message": "Volume mínimo para 1 cozinha, conforme NBR 8160."
+                "message": "Volume mínimo para 1 cozinha, conforme NBR 8160.",
+                "maintenance_interval": maintenance_msg
             }
         elif num_sinks == 2:
             value = {
                 "title": "Recomendação: Caixa de Gordura Dupla (CGD)",
                 "volume_liters": self.DUAL_RESIDENTIAL_MINIMUM_VOLUME,
-                "message": "Volume mínimo para 2 cozinhas, conforme NBR 8160."
+                "message": "Volume mínimo para 2 cozinhas, conforme NBR 8160.",
+                "maintenance_interval": maintenance_msg
             }
         else:
             # Fórmula NBR 8160 (4.2.5.4): V = 2 * N
@@ -27,21 +32,34 @@ class ApiService:
                 "title": "Recomendação: Caixa de Gordura Especial (CGE)",
                 "volume_liters": volume,
                 "volume_m3": volume / 1000,
-                "message": f"Cálculo para {num_people} pessoas em edificação coletiva (V = 2 * N)."
+                "message": f"Cálculo para {num_people} pessoas em edificação coletiva (V = 2 * N).",
+                # Para edifícios, a carga é maior, recomenda-se limpeza trimestral
+                "maintenance_interval": "A cada 3 meses (Trimestral)"
             }
         return value
 
     def calculate_commercial(self, num_meals: int):
         volume = (2 * num_meals) + 20
+
+        # Lógica para definir a frequência de manutenção comercial
+        if num_meals <= 100:
+            maintenance = "Mensal"
+        elif num_meals <= 400:
+            maintenance = "Semanal"
+        else:
+            maintenance = "Diária"
+
         value = {
             "title": "Cálculo para Uso Comercial",
             "volume_liters": volume,
             "volume_m3": volume / 1000,
-            "message": f"Cálculo baseado em {num_meals} refeições diárias (V = 2N + 20)."
+            "message": f"Cálculo baseado em {num_meals} refeições diárias (V = 2N + 20).",
+            "maintenance_interval": maintenance
         }
         return value
 
-    def get_siphon_box_pipes(self,
+    # Renomeado para 'calculate_' para manter padrão, ajuste no handler se necessário
+    def calculate_siphon_pipes(self,
         sinks: int = 0,
         showers: int = 0,
         tubs: int = 0,
@@ -88,6 +106,6 @@ class ApiService:
         value = {
             "outlet_pipe_mm": outlet_pipe_mm,
             "inlet_info": "Entradas de 50mm e 40mm compatíveis.",
-            "message": "Cálculo baseado em 8 UHCs (Unidades Hunter de Contribuição)."
+            "message": f"Cálculo baseado em {total_uhc} UHCs (Unidades Hunter de Contribuição)."
         }
         return value
