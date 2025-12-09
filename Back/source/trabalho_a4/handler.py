@@ -44,7 +44,7 @@ def get_siphon_box_pipes(
     utility_sinks: int = 0,
     floor_drains: int = 0
     ):
-    return api_service.get_siphon_box_pipes(
+    return api_service.calculate_siphon_pipes(
         sinks,
         showers,
         tubs,
